@@ -123,6 +123,18 @@ private:
 #define _swap_int16_t(a, b) { int16_t t = a; a = b; b = t; }
 #endif
 
+// Opt-in: make the functions that write the frame buffer virtual, so a subclass can mirror every
+// write (e.g. into a colour frame buffer). Off by default, which keeps the non-virtual, inlined writes.
+#ifdef OLEDDISPLAY_OVERRIDABLE_DRAW
+#define OLEDDISPLAY_DRAW_HOOK virtual
+#define OLEDDISPLAY_DRAW_INTERNAL_INLINE
+#define OLEDDISPLAY_DRAW_INTERNAL_ATTRIBUTES
+#else
+#define OLEDDISPLAY_DRAW_HOOK
+#define OLEDDISPLAY_DRAW_INTERNAL_INLINE inline
+#define OLEDDISPLAY_DRAW_INTERNAL_ATTRIBUTES __attribute__((always_inline))
+#endif
+
 enum OLEDDISPLAY_COLOR {
   BLACK = 0,
   WHITE = 1,
@@ -193,13 +205,13 @@ class OLEDDisplay : public Stream {
     OLEDDISPLAY_COLOR getColor();
 
     // Draw a pixel at given position
-    void setPixel(int16_t x, int16_t y);
+    OLEDDISPLAY_DRAW_HOOK void setPixel(int16_t x, int16_t y);
 
     // Draw a pixel at given position and color
-    void setPixelColor(int16_t x, int16_t y, OLEDDISPLAY_COLOR color);
+    OLEDDISPLAY_DRAW_HOOK void setPixelColor(int16_t x, int16_t y, OLEDDISPLAY_COLOR color);
 
     // Clear a pixel at given position FIXME: INVERSE is untested with this function
-    void clearPixel(int16_t x, int16_t y);
+    OLEDDISPLAY_DRAW_HOOK void clearPixel(int16_t x, int16_t y);
 
     // Draw a line from position 0 to position 1
     void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1);
@@ -226,10 +238,10 @@ class OLEDDisplay : public Stream {
     void fillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2);
 
     // Draw a line horizontally
-    void drawHorizontalLine(int16_t x, int16_t y, int16_t length);
+    OLEDDISPLAY_DRAW_HOOK void drawHorizontalLine(int16_t x, int16_t y, int16_t length);
 
     // Draw a line vertically
-    void drawVerticalLine(int16_t x, int16_t y, int16_t length);
+    OLEDDISPLAY_DRAW_HOOK void drawVerticalLine(int16_t x, int16_t y, int16_t length);
 
     // Draws a rounded progress bar with the outer dimensions given by width and height. Progress is
     // a unsigned byte value between 0 and 100
@@ -313,7 +325,7 @@ class OLEDDisplay : public Stream {
     virtual void display(void) = 0;
 
     // Clear the local pixel buffer
-    void clear(void);
+    OLEDDISPLAY_DRAW_HOOK void clear(void);
 
     // Log buffer implementation
 
@@ -396,7 +408,7 @@ class OLEDDisplay : public Stream {
     // converts utf8 characters to extended ascii
     char* utf8ascii(const String &s);
 
-    void inline drawInternal(int16_t xMove, int16_t yMove, int16_t width, int16_t height, const uint8_t *data, uint16_t offset, uint16_t bytesInData) __attribute__((always_inline));
+    OLEDDISPLAY_DRAW_HOOK void OLEDDISPLAY_DRAW_INTERNAL_INLINE drawInternal(int16_t xMove, int16_t yMove, int16_t width, int16_t height, const uint8_t *data, uint16_t offset, uint16_t bytesInData) OLEDDISPLAY_DRAW_INTERNAL_ATTRIBUTES;
 
     uint16_t drawStringInternal(int16_t xMove, int16_t yMove, const char* text, uint16_t textLength, uint16_t textWidth, bool utf8);
 
